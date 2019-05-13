@@ -39,10 +39,10 @@ This can be accomplished by alerting the Dockerfile to include Multiple stages. 
 1. Move the Dockerfile from this repository to the current location 
 1. For the asterionDB WebApp, copy the file public/assets/asteriondb_config.example to public/assets/asteriondb_config.js _Changing the assignment for `asterionRestAPI` to an appropriate URL.
 1. Use the following command to  Build an Image
-`docker build --target=build -t objvault-webapp:build .`
+`docker build --target=build-phase -t objvault-webapp:build .`
 1. For Development, Create a container using the image containing the _build_ tag.
 `docker rm webapp 2>/dev/null;docker run -d -p 3000:3000 --name webapp objvault-webapp:build && docker logs webapp`
-_After development / testing is completed, the final Production Image (harvesting the fruits of the ReactJS Library_
+_After development / testing is completed, the final Production Image (harvesting the fruits of the ReactJS Library)_
 1. For Production, Build the Production Image using:
 `docker build -t objvault-webapp:latest .`
 1. Now a Production deployment from a lightweight image can be started
