@@ -21,6 +21,16 @@ ${EXPAND_LOCATION}/asterion/oracle/objVault/javaScript/objVault-webApp-${VERSION
 
 Finally, the Dockerfile itself is fairly generic (assumes a directory 'src' for the NodeJS application and 'public' for the static and configuration content).
 
+## Working towards a Production Ready Container
+
+As it turns out, the actual Web UI is built using React JavaScript Library from https://reactjs.org which, by it's nature,
+is able to run the JavaScript within modern browsers.  During actual production execution, there is no need for a NodeJS
+Server to be running.  The key is to harvest the content of the build subdirectory after the _npm run build_ stage in
+the Dockerfile and deliver the then static content to the browsers via a web server, such as _nginx_.
+
+This can be accomplished by alerting the Dockerfile to include Multiple stages. See: https://docs.docker.com/develop/develop-images/multistage-build/
+
+
 ### Instructions
 1. [Install Docker](https://www.docker.com/get-started) from here for your platform. 
 1. Create a directory to hold the Dockerfile and expanded webApp content
@@ -29,10 +39,16 @@ Finally, the Dockerfile itself is fairly generic (assumes a directory 'src' for 
 1. Move the Dockerfile from this repository to the current location 
 1. For the asterionDB WebApp, copy the file public/assets/asteriondb_config.example to public/assets/asteriondb_config.js _Changing the assignment for `asterionRestAPI` to an appropriate URL.
 1. Use the following command to  Build an Image
+`docker build --target=build -t objvault-webapp:build .`
+1. For Development, Create a container using the image containing the _build_ tag.
+`docker rm webapp 2>/dev/null;docker run -d -p 3000:3000 --name webapp objvault-webapp:build && docker logs webapp`
+_After development / testing is completed, the final Production Image (harvesting the fruits of the ReactJS Library_
+1. For Production, Build the Production Image using:
 `docker build -t objvault-webapp:latest .`
-1. Create a container using
-`docker rm webapp 2>/dev/null;docker run -d -p 3000:3000 --name webapp objvault-webapp && docker logs webapp`
+1. Now a Production deployment from a lightweight image can be started
+`docker run -d -p8080:80 --name webapp-prod objvault:latest && docker logs webapp-prod`
 
 ### Notes
 1. More information on this product is available at https://www.asteriondb.com
+1. The project has gone from a simple nodejs application deployment to development / production packaging options.
 
