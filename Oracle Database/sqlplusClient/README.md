@@ -8,8 +8,8 @@ The simple example Dockerfile builds from a slim Oracle Linux 7 and sets up repo
 1. [Install Docker](https://www.docker.com/get-started) from here for your platform. 
 1. Create a directory to hold the Dockerfile and Configuration file(s)
 1. Change to that directory in a  _Terminal or Shell window_.
-1. By default, the image starts a nodeJS session allowing one to do interactive test connections
+1. By default, the image starts the sqlplus executable.
 
 ### Notes
-1. The Dockerfile issues sqlplus as the default command, /oracle/network/admin path is precreated and specified as a volume to allow simple configuration, including a Cloud Wallet during the run command.
+1. /oracle/network/admin path is precreated, pointed to by the Instant Client install and specified as a volume to allow simple configuration, including a Cloud Wallet during the run command.
 
