@@ -1,9 +1,22 @@
 #!/bin/sh
-# Performance configuration based on article https://geekflare.com/php-fpm-optimization/
-echo '# Activate emergency_restart* and process_control_timeout parameters in /etc/php-fpm.conf'
+
+#### Settings into the various php-fpm and nginx configuration files
+
+# -- Performance configuration based on article https://geekflare.com/php-fpm-optimization/
 emergency_restart_threshold='10'
 emergency_restart_interval='1m'
 process_control_timeout='10s'
+
+# -- Initial values based on the number of connections to Oracle DB and that this is running in a container
+# -- Scaling would be performed by adding more containers
+pm_type='static'
+pm_max_children='10'
+
+listen_owner='nginx'
+listen_group='nginx'
+listen_php_fpm='/run/php-fpm/php-fpm.sock'
+
+echo '# Activate emergency_restart* and process_control_timeout parameters in /etc/php-fpm.conf'
 # Note: In the following, the parameters are only changed IF they were commented out previously.
 sed -i~ 's@^;[[:space:]]*\(emergency_restart_threshold\)[[:space:]]*=.*$@\1 = '"${emergency_restart_threshold}@;"\
 's@^;[[:space:]]*\(emergency_restart_interval\)[[:space:]]*=.*$@\1 = '"${emergency_restart_interval}@;"\
@@ -12,13 +25,6 @@ sed -i~ 's@^;[[:space:]]*\(emergency_restart_threshold\)[[:space:]]*=.*$@\1 = '"
 
 if [ -e /etc/php-fpm.d/www.conf ]; then
   echo '# Adjust pm.* parameters of www domain from defaults in /etc/php-fpm.d/www.conf'
-  # -- Initial values based on the number of connections to Oracle DB and that this is running in a container
-  # -- Scaling would be performed by adding more containers
-  pm_type='static'
-  pm_max_children='20'
-  listen_owner='nginx'
-  listen_group='nginx'
-  listen_php_fpm='/run/php-fpm/php-fpm.sock'
 
   sed -i~ 's@^[;]*\(pm\)[[:space:]]*=.*$@\1 = '"${pm_type}@;"\
 's@^[;]*\(pm\.max_children\).*$@\1 = '"${pm_max_children}@;"\
