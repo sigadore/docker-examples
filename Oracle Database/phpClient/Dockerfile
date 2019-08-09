@@ -11,6 +11,7 @@ RUN yum update -y \
  && yum install -y oracle-instantclient18.3-basic \
       oracle-instantclient18.3-devel \
       php-fpm \
+      php-oci8-12c \
       nginx
 
 # Configure Instant Client
