@@ -30,7 +30,7 @@ if [ -e /etc/php-fpm.d/www.conf ]; then
 
 # Add environments required for Instant Clinet access by php-oci8
   cat >>  /etc/php-fpm.d/www.conf <<EOF
-env["TNSADMIN"]=\$TNSADMIN
+env["TNS_ADMIN"]=\$TNS_ADMIN
 env["LD_LIBRARY_PATH"]=\$LD_LIBRARY_PATH
 env["ORACLE_HOME"]=\$ORACLE_HOME
 EOF

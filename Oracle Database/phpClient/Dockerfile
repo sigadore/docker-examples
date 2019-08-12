@@ -21,7 +21,7 @@ RUN mkdir -p "${ORACLE_INSTANTCLIENT}/network" /oracle/network/admin \
 
 VOLUME /oracle/network/admin
 
-ENV TNSADMIN /oracle/network/admin
+ENV TNS_ADMIN /oracle/network/admin
 ENV LD_LIBRARY_PATH ${ORACLE_INSTANTCLIENT}/lib
 ENV ORACLE_HOME ${ORACLE_INSTANTCLIENT}
 

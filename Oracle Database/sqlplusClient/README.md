@@ -13,3 +13,21 @@ The simple example Dockerfile builds from a slim Oracle Linux 7 and sets up repo
 ### Notes
 1. /oracle/network/admin path is precreated, pointed to by the Instant Client install and specified as a volume to allow simple configuration, including a Cloud Wallet during the run command.
 
+### Running
+
+With the Oracle Cloud Wallet, you can inject this via a Host Volume mapped to /oracle/network/admin in addition the root directory of you .sql files (or spool output)
+can be mapped to /sqlwork
+
+For example:
+
+docker build -t sqlplus .
+...
+
+docker run -it --rm -v fullpath-to-my-unzipped-Wallet:/oracle/network/admin -v `pwd`:/sqlwork sqlplus:latest dbSchemaName@connection @life.sql
+...
+Password: 
+...
+
+ANSWER
+======
+42

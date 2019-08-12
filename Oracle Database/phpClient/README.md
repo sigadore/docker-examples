@@ -45,4 +45,10 @@ _docker run -d -p 8080:80 -v walletdir:/oracle/network/admin php-fpm-oracle_
 
 The port being mapped in the examples and even the image name itself can be altered as needed.
 
+Note: Since we are using the Oracle Cloud Wallet and to make the extenal mapping from the run command easy to tolerate changes in the Oracle Instance Client version (which affectes it's
+defailt install directory.  There's some symbolic link magic applied and assumes the ORACLE_HOME ==> ORACLE_INSTANTCLIENT root (above lib and bin) For the purposes of the wallet,
+TNS_ADMIN ==> /oracle/network/admin -- a Wallet downloaded from Oracle Cloud at this time, makes the assumption, in the sqlnet.ora file, that ORACLE_HOME is set and under the
+$ORACLE_HOME the network/admin various non-config content of the wallet exist.  Technically, ORACLE_HOME is not supposed to be set when using Oracle Instant Client, to avoid
+clashes with any other actual ORACLE_HOME installed on the same box.  So, if you prefer to have ORACLE_HOME unset, then sqlnet.ora in the directory that TNS_ADMIN points to (i.e. your wallet on the host filesystem), should contain DIRECTORY=$TNS_ADMIN in place of the '?/network/admin' entry which arrives by default.  An example where this may become significant is if you provide the directory
+contents of the Wallet via some "secrets" injection by an Orchastration Framework.  The sqlnet.ora entry in the Wallet may need to be adjusted to address this.
 
