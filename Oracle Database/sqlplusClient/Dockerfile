@@ -1,6 +1,6 @@
 FROM oraclelinux:7-slim
 
-ENV ORACLE_INSTANTCLIENT /usr/lib/oracle/18.3
+ENV ORACLE_INSTANTCLIENT /usr/lib/oracle/19.3
 
 RUN curl -o /etc/yum.repos.d/public-yum-ol7.repo http://yum.oracle.com/public-yum-ol7.repo \
  && yum install -y yum-utils \
