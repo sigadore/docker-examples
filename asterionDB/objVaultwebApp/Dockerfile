@@ -1,13 +1,27 @@
 # Building of NodeJS App
-FROM node as build-phase
+FROM node:12 as build-phase
+
+EXPOSE 3000
+
+RUN apk update \
+ && apk add --no-cache tini
+
 WORKDIR /objVault-webApp
-COPY package.json .
-RUN npm install
+
+COPY package*.json ./
+RUN npm install \
+ && npm cache clean --force
+
 COPY . .
 RUN npm run build \
  && chmod -R a+r build \
  && find build -type d -exec chmod a+x {} \;
-CMD npm start
+
+# --> Alternative to handle signals correctly
+# ENTRYPOINT [ "/sbin/tini", "--" ]
+# CMD [ "node", "app.js" ]
+
+CMD [ "npm", "start" ]
 
 # Production harvest
 FROM nginx
