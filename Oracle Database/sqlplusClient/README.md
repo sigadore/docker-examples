@@ -1,8 +1,8 @@
 # docker-examples/Oracle Database/sqlplusClient
 
-## Oracle Database Client 18c including sqlplus
+## Oracle Database Client 19c including sqlplus
 
-The simple example Dockerfile builds from a slim Oracle Linux 7 and sets up repositories to obtain the Oracle Instant Client 18.3c basic and sqlplus.  If the versions are updated, then minor adjustments to the environment variable ORACLE_INSTANTCLIENT, the YUM Repo contents and possibly the Dynamic Library configuration may be requred.
+The simple example Dockerfile builds from a slim Oracle Linux 7 and sets up repositories to obtain the Oracle Instant Client 19.3c basic and sqlplus.  If the versions are updated, then minor adjustments to the environment variable ORACLE_INSTANTCLIENT, the YUM Repo contents and possibly the Dynamic Library configuration may be requred.
 
 ### Instructions
 1. [Install Docker](https://www.docker.com/get-started) from here for your platform. 
