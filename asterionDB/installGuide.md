@@ -16,7 +16,7 @@ Overview
 Step by Step
 ------------
 
-Pre-req after starting a new Compute Instance
+### Pre-req after starting a new Compute Instance
 Publish DNS entry for the Compute's <ipAddress>
 Acquire an SSL Certificate for that DNS entry
 Some of the steps (before testing nginx can be performed while DNS publish is happening)
@@ -24,8 +24,8 @@ Some of the steps (before testing nginx can be performed while DNS publish is ha
 ```bash
 scp -i keyfile  opc@<ipAddress>
 ```
-Connected as `opc` and `sudo -s`
----------------------------------
+## Connected as `opc` and `sudo -s`
+
 ### Install ol7 packages
 ``` bash
 yum install oracle-release-el7 fuse rlwrap fuse-libs uriparser nginx
@@ -39,41 +39,48 @@ From Laptop:
 scp -i keyfile <wallet-file> opc@<ipAddress>:.
 ```
 
-Back on Compute Instance:
+### Back on Compute Instance:
 ``` bash
 mkdir -p /usr/lib/oracle/19.3/client64/network/admin
 unzip -d /usr/lib/oracle/19.3/client64/network/admin /home/opc/Wallet_Asterion01test.zip
 ```
-Find out the first DB alias provided from the Wallet
+### Find out the first DB alias provided from the Wallet
 ``` bash
 head -1 /usr/lib/oracle/19.3/client64/network/admin/tnsnames.ora
  <DBalias> = ...
 ```
 
-Validate connection with SQL*Plus
+### Validate connection with SQL*Plus
 ``` bash
 export ORACLE_HOME='/usr/lib/oracle/19.3/client64'
 sqlplus ADMIN/<ADMIN_PASSWORD>@<DBalias>
 ```
-**TO HERE**
 
-# 3. Enable and test nginx connectivity 
+### Enable and test nginx connectivity 
+``` bash
 systemctl enable nginx
 systemctl start nginx
 firewall-cmd --zone=public --permanent --add-port=80/tcp
 firewall-cmd --zone=public --permanent --add-port=443/tcp
 firewall-cmd --reload
+```
 
-# - Connect to port 80 of the <ipAddress> from your browser, ensure nginx test page.  You may need to make
-# adjustments to the Compute's Network to allow port 80 and 443 through to the instance -
+### Test Web Server
+Connect to port 80 of the `<ipAddress>` from your browser, ensure `nginx` test page.  *You may need to make
+adjustments to the Compute's Network to allow port 80 and 443 through to the instance.*
 
-# 4. Install certbot.  Be sure to configure certbot/nginx for the DNS names assigned to the compute node
-# This step requires the DNS publication and SSL certificate to validate, one can update their local /etc/hosts file
-# in order to fake the DNS entry, but after it is published, the testing needs to be performed again
-# --> Test nginx connectivity to port 80 and ensure that it redirects to 443.
+Install certbot
+---------------
+Be sure to configure certbot/nginx for the DNS names assigned to the compute node
+*This step requires the DNS publication and SSL certificate to validate, one can update their local /etc/hosts file
+in order to fake the DNS entry, but after it is published, the testing needs to be performed again*
+**CERTBOT INSTALL INSTRUCTIONS HERE**
 
-# 5. Set up services and users
+### Test nginx connectivity to port 80 and ensure that it redirects to 443.
 
+Set up services and users
+-------------------------
+``` bash
 useradd asterion
 mkdir /home/asterion/.ssh
 cp /home/opc/.ssh/authorized_keys /home/asterion/.ssh/
@@ -95,5 +102,5 @@ usermod -a -G asterion php
 usermod -a -G asterion nginx
 usermod -a -G php nginx
 usermod -a -G fuse asterion
-
+```
 
