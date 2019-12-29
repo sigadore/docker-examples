@@ -21,13 +21,13 @@ Publish DNS entry for the Compute's <ipAddress>
 Acquire an SSL Certificate for that DNS entry
 Some of the steps (before testing nginx can be performed while DNS publish is happening)
 
-```shell
+```bash
 scp -i keyfile  opc@<ipAddress>
 ```
 Connected as `opc` and `sudo -s`
 ---------------------------------
 ### Install ol7 packages
-```shell
+```bash
 yum install oracle-release-el7 fuse rlwrap fuse-libs uriparser nginx
 yum install oracle-instantclient19.3-basic oracle-instantclient19.3-tools oracle-instantclient19.3-sqlplus
 ```
@@ -35,24 +35,26 @@ yum install oracle-instantclient19.3-basic oracle-instantclient19.3-tools oracle
 ### Set up connectivity to the Database Instance  
 *Download ADB instance Wallet onto Laptop*
 From Laptop:
-```shell
+```bash
 scp -i keyfile <wallet-file> opc@<ipAddress>:.
 ```
 
 Back on Compute Instance:
-```shell
+```bash
 mkdir -p /usr/lib/oracle/19.3/client64/network/admin
 unzip -d /usr/lib/oracle/19.3/client64/network/admin /home/opc/Wallet_Asterion01test.zip
 ```
 Find out the first DB alias provided from the Wallet
-```shell
+```bash
 head -1 /usr/lib/oracle/19.3/client64/network/admin/tnsnames.ora
  <DBalias> = ...
 ```
 
 Validate connection with SQL*Plus
+```bash
 export ORACLE_HOME='/usr/lib/oracle/19.3/client64'
 sqlplus ADMIN/<ADMIN_PASSWORD>@<DBalias>
+```
 **TO HERE**
 
 # 3. Enable and test nginx connectivity 
