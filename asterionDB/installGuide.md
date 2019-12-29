@@ -29,7 +29,8 @@ scp -i keyfile  opc@<ipAddress>
 ### Install ol7 packages
 ``` bash
 yum install oracle-release-el7 fuse rlwrap fuse-libs uriparser nginx
-yum install oracle-instantclient19.3-basic oracle-instantclient19.3-tools oracle-instantclient19.3-sqlplus
+yum install oracle-instantclient19.3-basic oracle-instantclient19.3-tools \
+            oracle-instantclient19.3-sqlplus
 ```
 
 ### Set up connectivity to the Database Instance  
