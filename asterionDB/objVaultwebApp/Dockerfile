@@ -1,6 +1,9 @@
 # Building of NodeJS App
 FROM node:12 as build-phase
 
+ARG version="1.9.3"
+ARG buildpath="asteriondb/oracle/objVault/javaScript/objVault-webapp-"${version}
+
 EXPOSE 3000
 
 RUN apk update \
@@ -8,11 +11,11 @@ RUN apk update \
 
 WORKDIR /objVault-webApp
 
-COPY package*.json ./
+COPY ${buildpath}/package*.json ./
 RUN npm install \
  && npm cache clean --force
 
-COPY . .
+COPY ${buildpath}/. .
 RUN npm run build \
  && chmod -R a+r build \
  && find build -type d -exec chmod a+x {} \;
