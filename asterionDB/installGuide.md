@@ -17,12 +17,15 @@ Step by Step
 ------------
 
 ### Pre-req after starting a new Compute Instance
-Publish DNS entry for the Compute's <ipAddress>
+Publish DNS entry for the Compute's *ipAddress* which can be placed in a shell variable ipAddress.
+For example `
+ipaddress=192.168.9.15
+`
 Acquire an SSL Certificate for that DNS entry
 Some of the steps (before testing nginx can be performed while DNS publish is happening)
 
-```bash
-scp -i keyfile  opc@<ipAddress>
+``` bash
+scp -i keyfile  opc@${ipAddress}
 ```
 ## Connected as `opc` and `sudo -s`
 
@@ -37,7 +40,7 @@ yum install oracle-instantclient19.3-basic oracle-instantclient19.3-tools \
 *Download ADB instance Wallet onto Laptop*
 From Laptop:
 ``` bash
-scp -i keyfile <wallet-file> opc@<ipAddress>:.
+scp -i keyfile ${wallet_file} opc@${ipAddress}:.
 ```
 
 ### Back on Compute Instance:
@@ -48,15 +51,15 @@ unzip -d /usr/lib/oracle/19.3/client64/network/admin /home/opc/Wallet_Asterion01
 ### Find out the first DB alias provided from the Wallet
 ``` bash
 head -1 /usr/lib/oracle/19.3/client64/network/admin/tnsnames.ora
- <DBalias> = ...
 ```
+ **DBalias**`= (description= ...)`
+
 
 ### Validate connection with SQL*Plus
 ``` bash
 export ORACLE_HOME='/usr/lib/oracle/19.3/client64'
-sqlplus ADMIN/<ADMIN_PASSWORD>@<DBalias>
+sqlplus ADMIN/@${DBalias}
 ```
-
 ### Enable and test nginx connectivity 
 ``` bash
 systemctl enable nginx
