@@ -17,11 +17,9 @@ Step by Step
 ------------
 
 ### Pre-req after starting a new Compute Instance
-Publish DNS entry for the Compute's *ipAddress* which can be placed in a shell variable ipAddress.
-For example `
-ipaddress=192.168.9.15
-`
-Acquire an SSL Certificate for that DNS entry
+1. Publish DNS entry for the Compute's *ipAddress* which can be placed in a shell variable ipAddress.  For example: `ipaddress=192.168.9.15`
+
+1. Acquire an SSL Certificate for that DNS entry
 Some of the steps (before testing nginx can be performed while DNS publish is happening)
 
 ``` bash
