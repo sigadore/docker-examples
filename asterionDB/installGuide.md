@@ -29,9 +29,14 @@ scp -i keyfile  opc@${ipAddress}
 
 ### Install ol7 packages
 ``` bash
-yum install oracle-release-el7 fuse rlwrap fuse-libs uriparser nginx
-yum install oracle-instantclient19.3-basic oracle-instantclient19.3-tools \
-            oracle-instantclient19.3-sqlplus
+yum install -y \
+    oracle-release-el7 oracle-php-release-el7 \
+yum install -y \
+    fuse rlwrap fuse-libs uriparser nginx \
+    php php-oci8-12c php-mbstring php-json php-common php-fpm \
+    oracle-instantclient19.3-basic \
+    oracle-instantclient19.3-tools \
+    oracle-instantclient19.3-sqlplus
 ```
 
 ### Set up connectivity to the Database Instance  
@@ -43,16 +48,18 @@ scp -i keyfile ${wallet_file} opc@${ipAddress}:.
 
 ### Back on Compute Instance:
 ``` bash
-mkdir -p /usr/lib/oracle/19.3/client64/network/admin
-unzip -d /usr/lib/oracle/19.3/client64/network/admin /home/opc/Wallet_Asterion01test.zip
+mkdir -p /usr/lib/oracle/19.3/client64/lib/network/admin
+unzip -d /usr/lib/oracle/19.3/client64/lib/network/admin \
+      /home/opc/Wallet_Asterion01test.zip
 ```
 ### Find out the first DB alias provided from the Wallet
 ``` bash
 head -1 /usr/lib/oracle/19.3/client64/network/admin/tnsnames.ora
 ```
- **DBalias**`= (description= ...)`
-
-
+*Results in*
+ **DBaliasName**`= (description= ...)`
+___
+Set `DBalias="`**DBaliasName**`"`
 ### Validate connection with SQL\*Plus
 
 ``` bash
@@ -69,12 +76,10 @@ firewall-cmd --reload
 ```
 
 ### Test Web Server
-Connect to port 80 of the `<ipAddress>` from your browser, ensure `nginx` test page.  *You may need to make
-adjustments to the Compute's Network to allow port 80 and 443 through to the instance.*
+Connect to port 80 of the `${ipAddress}` from your browser, ensure `nginx` test page.  *You may need to make adjustments to the Compute Node's exposed Network to allow port 80 and 443 through to the instance.*
 
 
-Set up services and users
--------------------------
+### Set up users and services
 ``` bash
 useradd asterion
 mkdir /home/asterion/.ssh
@@ -87,9 +92,6 @@ mkdir -p run/php-fpm
 mkdir chunkedUploads
 chown php:php -R run/ chunkedUploads/
 chmod 700 chunkedUploads/
-
-yum install oracle-php-release-el7
-yum install php php-oci8-12c php-mbstring php-json php-common php-fpm
 
 systemctl disable httpd
 
@@ -115,4 +117,3 @@ in order to fake the DNS entry, but after it is published, the testing needs to 
 **CERTBOT INSTALL INSTRUCTIONS HERE**
 
 ### Test nginx connectivity to port 80 and ensure that it redirects to 443, showing login page.
-
