@@ -20,7 +20,7 @@ Step by Step
 1. Publish DNS entry for the Compute's *ipAddress* which can be placed in a shell variable ipAddress.  For example: `ipaddress=192.168.9.15`
 
 1. Acquire an SSL Certificate for that DNS entry
-Some of the steps (before testing nginx can be performed while DNS publish is happening)
+Some of the steps *before testing nginx https access can be performed while DNS publish is happening*
 
 ``` bash
 scp -i keyfile  opc@${ipAddress}
@@ -53,7 +53,8 @@ head -1 /usr/lib/oracle/19.3/client64/network/admin/tnsnames.ora
  **DBalias**`= (description= ...)`
 
 
-### Validate connection with SQL*Plus
+### Validate connection with SQL\*Plus
+
 ``` bash
 export ORACLE_HOME='/usr/lib/oracle/19.3/client64'
 sqlplus ADMIN/@${DBalias}
@@ -71,14 +72,6 @@ firewall-cmd --reload
 Connect to port 80 of the `<ipAddress>` from your browser, ensure `nginx` test page.  *You may need to make
 adjustments to the Compute's Network to allow port 80 and 443 through to the instance.*
 
-Install certbot
----------------
-Be sure to configure certbot/nginx for the DNS names assigned to the compute node
-*This step requires the DNS publication and SSL certificate to validate, one can update their local /etc/hosts file
-in order to fake the DNS entry, but after it is published, the testing needs to be performed again*
-**CERTBOT INSTALL INSTRUCTIONS HERE**
-
-### Test nginx connectivity to port 80 and ensure that it redirects to 443.
 
 Set up services and users
 -------------------------
@@ -105,4 +98,21 @@ usermod -a -G asterion nginx
 usermod -a -G php nginx
 usermod -a -G fuse asterion
 ```
+
+**Remaining framework steps in Outline**
+
+**Software Download and install**
+
+**nginx configuration**
+
+
+Install certbot
+---------------
+Be sure to configure certbot/nginx for the DNS names assigned to the compute node
+*This step requires the DNS publication and SSL certificate to validate, one can update their local /etc/hosts file
+in order to fake the DNS entry, but after it is published, the testing needs to be performed again*
+
+**CERTBOT INSTALL INSTRUCTIONS HERE**
+
+### Test nginx connectivity to port 80 and ensure that it redirects to 443, showing login page.
 
