@@ -122,8 +122,73 @@ usermod -a -G fuse asterion
 
 **Remaining framework steps in Outline**
 ### Fuse plugin setup
+edit `/etc/fuse.conf` to uncomment *user_allow*
+``` bash
+mkdir /mnt/dbObscuraOra
+chown asterion:asterion /mnt/dbObscuraOra
+
+```
 ### php-fpm configuration
-### Build base video Databse plugin hooks
+*edit* `/etc/php.ini`, set the following properties
+    upload_max_filesize = 1G
+    post_max_size = 1G
+    upload_tmp_dir = /var/php
+
+*edit* `/etc/php-fpm.d/www.conf`, set the following properties
+    user = php
+    group = php
+    listen = /var/php/run/php-fpm/php-fpm.sock
+    listen.owner = php
+    listen.group = php
+    security.limit_extensions = .php
+    env[HOSTNAME] = $HOSTNAME
+    env[LD_LIBRARY_PATH] = /usr/lib/oracle/18.3/client64/lib
+    env[ORACLE_HOME] = /usr/lib/oracle/18.3/client64/lib
+#### Set up php-fpm as a Service
+``` bash
+mkdir /etc/systemd/system/php-fpm.service.d/
+cat > /etc/systemd/system/php-fpm.service.d/php-fpm-oracle.conf <<"EOF"
+[Service]
+Environment=LD_LIBRARY_PATH=/usr/lib/oracle/18.3/client64/lib
+Environment=TNS_ADMIN=/usr/lib/oracle/18.3/client64/lib/network/admin
+EOF
+```
+#### Work around for `php-oci8` dependency on Oracle Client 12c
+``` bash
+ln -s /usr/lib/oracle/18.3/client64/lib/libclntsh.so.18.1 \
+/usr/lib/oracle/18.3/client64/lib/libclntsh.so.12.1
+```
+#### Enable php-fpm Service
+``` bash
+systemctl enable php-fpm
+systemctl start php-fpm
+systemctl status php-fpm
+```
+### Build base video Database plugin hooks
+
+*As asterion user, download libvpx-v1.7.0.tar.gz, nasm-2.13.02.tar.gz, last_x264.tar.bz, ffmpeg-4.1.3.tar.bz2 from AsterionDB distribution using `wget --content-disposition ...`*
+``` bash
+su - asterion
+```
+#### *create* `plugin.list`, add the Object IDs provided by AsterionDB
+``` bash
+cat >plugin.list <<EOF
+...
+EOF
+```
+#### *create* `dist.url`, place the URL provided by AsterionDB and create holding directory
+``` bash
+echo -n 'https://dist-sys.asteriondb.com/download/download_object?' > dist.url
+mkdir plugin_download
+```
+#### Download the `plugin` archive
+``` bash
+for obj in `cat plugin.list`;do
+  wget --content-disposition -P plugin_downloads `cat dist.url`"${obj}"
+done
+```
+
+---
 ### Disable SE Linux / Bounce the Compute Node
 *Currently, `nginx` is unable to properly serve out the webpage contents owned by `asterion` while SE Linux is enabled.  Other services have not been validated with SE Linux enabled.*
 Edit the file `/etc/selinux/config` and change the `SELINUX` variable to the value `disabled`.
@@ -137,6 +202,25 @@ Then, reboot --
 *The softwate will either be provided as a list of Objects and will be able to be accessed from an Object Vault Instance provided by AsterionDB.*
 #### Connect in as `asterion` user
     ssh -i keyfile opc@${ipAddress}
+
+#### Set up `asterion` user defaults
+*For `TWO_TASK`, use the **DBaliasName** used earlier.*
+`TNS_ADMIN` can be set if the Wallet Location is different from the Default. If the location is differernt, then either `sqlnet.ora` needs to be adjusted from what is provided from what is initially included in the Oracle Wallet -or- ORACLE_HOME needs to be set to a directory structure `network/admin` which contains the expanded Wallet contents.
+``` bash
+cat >> .bash_profile <<EOF
+export ORACLE_HOME=/usr/lib/oracle/18.3/client64/lib
+export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib/oracle/18.3/client64/lib
+export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/lib/oracle/18.3/client64/bin
+export TWO_TASK="DBaliasName"
+export SQLPATH=$HOME/orastuff
+export ASTERION=$HOME/asterion/oracle
+EOF
+```
+``` bash
+cat >> .bashrc <<EOF
+alias ufi='rlwrap sqlplus "$@"'
+EOF
+```
 
 - **nginx configuration**
 
