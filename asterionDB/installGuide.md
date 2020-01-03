@@ -51,33 +51,34 @@ yum install -y \
 yum install -y \
     fuse rlwrap fuse-libs uriparser nginx \
     php php-oci8-12c php-mbstring php-json php-common php-fpm \
-    oracle-instantclient19.3-basic \
-    oracle-instantclient19.3-tools \
-    oracle-instantclient19.3-sqlplus
+    oracle-instantclient18.3-basic \
+    oracle-instantclient18.3-tools \
+    oracle-instantclient18.3-sqlplus
 ```
 ### Enable and validate connectivity to the Database **(`default` location)**
 #### Move the Cloud Wallet info into the **(`default` location)**
 *Note: If the wallet is placed in a different location, `TNS_ADMIN` environment variable needs to be setup to point to the alternate location, these instructions assume the Oracle Instant Client Default location - see below minor changes needed.*
 ``` bash
-mkdir -p /usr/lib/oracle/19.3/client64/lib/network/admin
-unzip -d /usr/lib/oracle/19.3/client64/lib/network/admin \
+mkdir -p /usr/lib/oracle/18.3/client64/lib/network/admin
+unzip -d /usr/lib/oracle/18.3/client64/lib/network/admin \
       /home/opc/Wallet_DBname.zip
 ```
 #### Find out the first DB alias provided from the Wallet **(`default` location)**
 ``` bash
-head -1 /usr/lib/oracle/19.3/client64/lib/network/admin/tnsnames.ora
+export DBalias=$(awk '($0!~"^#" && $0~"^.*="){split($1,dbName,"=");print dbName[1];exit 0};END{exit 1}' /usr/lib/oracle/18.3/client64/lib/network/admin/tnsnames.ora)
 ```
-*Results in*
- **DBaliasName**`= (description= ...)`
-___
+*Results in the FIRST DB Alias parsed out of tnsnames.ora assigned to `DBalias`*
+**DBaliasName**`= (description= ...)`
+Otherwise,
 Set `DBalias="`**DBaliasName**`"`
+___
 #### Validate connection with SQL\*Plus **(`default` location)**
 *Note: `ORACLE_HOME` is being set due to the default assumptions currently made by **unchanged** Oracle Cloud Wallet generated.*
 You will need to be able to connect in as the Admin of the Oracle Autonomous Database (this is provided as a managed PDB Container).
 *For non-autonomous Database instances there will need to be an "Admin" account which has been granted SYSDBA activities during some aspects of the Database Install, which should NOT be the SYS account itself, gain assistance from AsterionDB support for the minor additions when the target is not a PDB container, as in Autonoumous).*
 ``` bash
 export ORACLE_HOME='/usr/lib/oracle/19.3/client64/lib'
-sqlplus ADMIN/@${DBalias}
+sqlplus64 ADMIN/@${DBalias}
 ```
 You will be invited to provide the ADMIN password and you're looking for **connected**
 ...
@@ -99,17 +100,17 @@ unzip -d ${TNS_ADMIN} \
 
 #### Find out the first DB alias provided from the Wallet **(`alternate` location)**
 ``` bash
-head -1 ${TNS_ADMIN}/tnsnames.ora
+export DBalias=$(awk '($0!~"^#" && $0~"^.*="){split($1,dbName,"=");print dbName[1];exit 0};END{exit 1}' ${TNS_ADMIN}/tnsnames.ora)
 ```
-*Results in*
+*Results in the FIRST DB Alias parsed out of tnsnames.ora*
  **DBaliasName**`= (description= ...)`
-___
 Set `DBalias="`**DBaliasName**`"`
+___
 #### Validate connection with SQL\*Plus **(`alternate` location)**
 You will need to be able to connect in as the Admin of the Oracle Autonomous Database (this is provided as a managed PDB Container).
 *For non-autonomous Database instances there will need to be an "Admin" account which has been granted SYSDBA activities during some aspects of the Database Install, which should NOT be the SYS account itself, gain assistance from AsterionDB support for the minor additions when the target is not a PDB container, as in Autonoumous).*
 ``` bash
-sqlplus ADMIN/@${DBalias}
+sqlplus64 ADMIN/@${DBalias}
 ```
 You will be invited to provide the ADMIN password and you're looking for **connected**
 ...
@@ -196,7 +197,7 @@ EOF
 ```
 #### Work around for `php-oci8` dependency on Oracle Client 12c
 ``` bash
-ln -s /usr/lib/oracle/18.3/client64/lib/libclntsh.so.18.1 \
+ln -s /usr/lib/oracle/18.3/client64/lib/libclntsh.so.18.3 \
 /usr/lib/oracle/18.3/client64/lib/libclntsh.so.12.1
 ```
 #### Enable php-fpm Service
@@ -449,19 +450,32 @@ Become the `asterion` user by exiting the `root` sudo issued earlier
 
     exit
 
-*For `TWO_TASK` below, specify the **DBaliasName** retrieved from `tnsnames.ora` earlier.*
-
-An `export` for `TNS_ADMIN` can be added, if the Wallet Location is different from the Default -- when the location is different, **and the adjustments to `sqlnet.ora` have been made in the earlier (`alternative` location) steps** from what was provided initially in the Oracle Wallet.
+#### Set `DBalias="`**DBaliasName**`"` *(`default` wallet location)*
+___
 ``` bash
-cat >> .bash_profile <<EOF
+export DBalias=$(awk '($0!~"^#" && $0~"^.*="){split($1,dbName,"=");print dbName[1];exit 0};END{exit 1}' /usr/lib/oracle/18.3/client64/lib/network/admin/tnsnames.ora)
+```
+\- OR -
+#### Set `DBalias="`**DBaliasName**`"` *(`alternate` wallet location)*
+An `export` for `TNS_ADMIN` needs to be added, if the Wallet Location is different from the Default -- when the location is different, **and the adjustments to `sqlnet.ora` have been made in the earlier (`alternative` location) steps** from what was provided initially in the Oracle Wallet.
+
+`export TNS_ADMIN=`**Location_to_hold_Cloud_Wallet**
+``` bash
+export DBalias=$(awk '($0!~"^#" && $0~"^.*="){split($1,dbName,"=");print dbName[1];exit 0};END{exit 1}' ${TNS_ADMIN}/tnsnames.ora)
+```
+___
+
+``` bash
+cat >> ~/.bash_profile <<EOF
 export ORACLE_HOME=/usr/lib/oracle/18.3/client64/lib
 export LD_LIBRARY_PATH=/usr/local/lib:/usr/lib/oracle/18.3/client64/lib
 export PATH=$PATH:$HOME/.local/bin:$HOME/bin:/usr/lib/oracle/18.3/client64/bin
-export TWO_TASK="DBaliasName"
-export SQLPATH=$HOME/orastuff
+export TWO_TASK="${DBalias}"
+export TNS_ADMIN="${TNS_ADMIN}"
 export ASTERION=$HOME/asterion/oracle
 EOF
 ```
+
 ``` bash
 cat >> .bashrc <<EOF
 alias ufi='rlwrap sqlplus "$@"'
@@ -510,15 +524,16 @@ Unix connectivity to port 80 and ensure that it redirects to 443, showing login 
 3. Determine if the Database being connected to is a PDB Container (including autonomous instance) or traditional / CDB (master container).
 
 #### Install Database Components **(Cleanup needed)**
-Set `DBalias="`**DBaliasName**`"`
 
+##### Create initial configuration helper file from template.
 ``` bash
+cd ~;source .bash_profile
 cd ~/asterion/oracle/admin
 sed 's@%***%@asterion_objvault@g;'\
 's@%***%@asterion_dbobscura@g;'\
 's@%***%@asterion_dbstreamer@g;'\
 's@%***%@asterion_dbplugins@g;' \
-"s@%***%@${DBalias}@g"
+"s@%***%@${TWO_TASK}@g"
     ./install_settings.input > ./install_settings.sh
 ```
 *edit* `install_settings.sh`
