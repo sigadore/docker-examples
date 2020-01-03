@@ -134,11 +134,13 @@ chown asterion:asterion /mnt/dbObscuraOra
 ```
 ### php-fpm configuration
 *edit* `/etc/php.ini`, set the following properties
+
     upload_max_filesize = 1G
     post_max_size = 1G
     upload_tmp_dir = /var/php
 
 *edit* `/etc/php-fpm.d/www.conf`, set the following properties
+
     user = php
     group = php
     listen = /var/php/run/php-fpm/php-fpm.sock
@@ -237,6 +239,7 @@ make; make install
 *Currently, `nginx` is unable to properly serve out the webpage contents owned by `asterion` while SE Linux is enabled.  Other services have not been validated with SE Linux enabled.*
 Edit the file `/etc/selinux/config` and change the `SELINUX` variable to the value `disabled`.
 Then, reboot --
+
     sync;sync;shutdown -rt 5 now
 #### Take a break...
 ---
@@ -244,9 +247,11 @@ Then, reboot --
 ### Perform nginx configuration and activate HTTPS (SSL)
 Sign back in as the root user via asterion account, which was set up for sudo access earlier.
 #### Connect in as `asterion` user
+
     ssh -i keyfile asterion@${ipAddress}
     sudo -s
 #### Configure nginx for AsterionDB services
+
 First, we do a quick backup of the default nginx configuration and remove the default response.
 ``` bash
 cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf~
@@ -413,17 +418,20 @@ alias ufi='rlwrap sqlplus "$@"'
 EOF
 ```
 
-- **nginx configuration**
+**The Following to be completed**
 
-Install certbot
----------------
-Be sure to configure certbot/nginx for the DNS names assigned to the compute node
-*This step requires the DNS publication and SSL certificate to validate, one can update their local /etc/hosts file
-in order to fake the DNS entry, but after it is published, the testing needs to be performed again*
+### Software Downloads from distribution source
+Include the download for loops
+Symbolic link for ObjVault WebApp
 
-**CERTBOT INSTALL INSTRUCTIONS HERE**
+**Installation of AsterionDB Database Components:**
+1. Database setup script
 
-### Test nginx connectivity to port 80 and ensure that it redirects to 443, showing login page.
-
-- **Installation of AsterionDB Database Components**
-- **Configuration and start of AsteironDB Compute Services**
+**Configuration and start of AsteironDB Compute Services:**
+### Product Configuration
+1. JavaScript for Web App
+2. userid/password and connection for ObjVault API
+3. userid/password and connection for dbStreamer, dbPlugin, dbObscura
+4. service setup script
+#### Webserver and content are now in place
+Unix connectivity to port 80 and ensure that it redirects to 443, showing login page. An error may show due to the Database needing to be set up properly.
