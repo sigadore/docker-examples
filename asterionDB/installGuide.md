@@ -118,6 +118,10 @@ usermod -a -G asterion php
 usermod -a -G asterion nginx
 usermod -a -G php nginx
 usermod -a -G fuse asterion
+
+cat > /etc/sudoers.d/91-asterion-user <<"EOF"
+asterion ALL=(ALL) NOPASSWD:ALL
+EOF
 ```
 
 **Remaining framework steps in Outline**
@@ -187,24 +191,211 @@ for obj in `cat plugin.list`;do
   wget --content-disposition -P plugin_downloads `cat dist.url`"${obj}"
 done
 ```
+#### Exit back to root
+    exit
 
----
+#### Unpack the plugin open source components
+``` bash
+cd /usr/local/src
+for a in ~asterion/plugin_downloads/*.tar.gz; do
+  tar xvzf $a
+done
+for a in ~asterion/plugin_downloads/*.tar.bz*; do
+  tar xvjf $a
+done
+
+export PATH=$PATH:/usr/local/bin
+export LD_LIBRARY_PATH=/usr/local/lib
+```
+#### Compile and Install
+While remaining in `/usr/local/src`
+For each of the products
+1. Change into product directory
+2. ./configure [with product options]
+3. make
+4. make install
+
+``` bash
+cd /usr/local/src/nasm-2.13.02; ./configure
+make; make install
+
+cd /usr/local/src/x264-snapshot-20190610-2245;
+./configure --enable-pic --enable-shared
+make; make install
+
+cd /usr/local/src/vpx;
+./configure --enable-pic --enable-shared
+make; make install
+
+cd /usr/local/src/ffmpeg-4.1.3;
+./configure --disable-doc --disable-network \
+    --enable-gpl --enable-version3 --enable-shared
+make; make install
+```
+
 ### Disable SE Linux / Bounce the Compute Node
 *Currently, `nginx` is unable to properly serve out the webpage contents owned by `asterion` while SE Linux is enabled.  Other services have not been validated with SE Linux enabled.*
 Edit the file `/etc/selinux/config` and change the `SELINUX` variable to the value `disabled`.
 Then, reboot --
     sync;sync;shutdown -rt 5 now
 #### Take a break...
+---
+
+### Perform nginx configuration and activate HTTPS (SSL)
+Sign back in as the root user via asterion account, which was set up for sudo access earlier.
+#### Connect in as `asterion` user
+    ssh -i keyfile asterion@${ipAddress}
+    sudo -s
+#### Configure nginx for AsterionDB services
+First, we do a quick backup of the default nginx configuration and remove the default response.
+``` bash
+cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf~
+cat >/etc/nginx/nginx.conf <<"EOF"
+# For more information on configuration, see:
+#   * Official English Documentation: http://nginx.org/en/docs/
+#   * Official Russian Documentation: http://nginx.org/ru/docs/
+
+user nginx;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    # Changes from baseline install
+    client_max_body_size 1G;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+}
+
+EOF
+```
+Next, we provide the Asterion site configuration.
+*Note: If other sites are to be configured, these should NOT be expressed in the base `nginx.conf` which we have replaced above. You can harvest these other "server" sections and place them in appropropriate site specific files located in a similar pattern to the one provided in the following as `asterion.conf`, notice that these reside in `/etc/nginx/conf.d` to allow the sites to be updated independently of one another.*
+You will provide an Environment variable `EXTERNAL_NAME` with the value of the fully qualified domanin name(s) registered as you DNS entry in order to allow the subsitiutions to work properly.  Otherwise, you may need to do some manual editing of `/etc/nginx/conf.d/asterion.conf` to address corner cases.
+
+`export EXTERNAL_NAME=`**fully-qualified-dns-external-name**
+``` bash
+sed "s@%EXTERNAL_NAME%@$EXTERNAL_NAME@g" <<"EOF" > /etc/nginx/conf.d/asterion.conf
+server
+{
+  server_name %EXTERNAL_NAME%;
+  listen 80;
+
+    location /objectVault/installationGuide
+    {
+        # Removed Absolute Path to see if it works.
+        return 301 https://cloud-eval.asteriondb.com/objectVault/installationGuide;
+    }
+
+    location /objectVault/usersGuide
+    {
+        # Removed Absolute Path to see if it works.
+        return 301 https://cloud-eval.asteriondb.com/objectVault/usersGuide;
+    }
+
+    # Proxy dbStreamer
+    # Example uri: https://cloud-eval.asteriondb.com/streaming/stream_object?AGVGYFVYXZN7MWJYKS2MZZXK53HCR1MN
+    # TODO: remove extraneous path segments
+    #
+    location /download/ {
+        proxy_pass http://127.0.0.1:6510/asterion_objvault/object_vault_pkg/;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+
+    location /streaming/ {
+        proxy_pass http://127.0.0.1:6510/asterion_objvault/object_vault_pkg/;
+        proxy_set_header X-Forwarded-For $remote_addr;
+    }
+
+    location ~ ^/objVaultAPI/(.*)$
+    {
+          alias /home/asterion/asterion/oracle/objVault/php/objVaultAPI/public; 
+          include         fastcgi_params;
+          fastcgi_pass   unix:/var/php/run/php-fpm/php-fpm.sock;
+          fastcgi_param SCRIPT_FILENAME $realpath_root/index.php;
+          fastcgi_param DOCUMENT_ROOT $realpath_root;
+          fastcgi_param REQUEST_URI $1;
+    }
+
+    location / 
+    {
+        try_files $uri /index.html =404;
+        root   /home/asterion/asterion/oracle/objVault/javaScript/objVault-webApp/build;
+        # index  index.html index.htm;
+    }
+
+}
+EOF
+```
+**None of the product specific content has been put into place yet, so the webserver will not work at this point.**
+#### Install certbot (secure traffic via SSL)
+Shown here are the instructions to support HTTPS access (SSL) using the Free Certificates and Automatic configuration via CertBot - https://certbot.eff.org
+If another strategy is to be employed within this Compute Node, then that should be applied now for the `asterion.conf` and loading (in the appropriate location for that strategy) of the required certificate and key assets needed.
+
+It is not advised to have the asterion services mixed with other non-asterion services on the same site from a single nginx server.  If it is desired to have the asterion services "melt" into other services from a particular site, some front ending of another server which provides the (SSL) and appropriate proxy is a strongly suggested strategy.
+*Remaining as the `root` user*
+``` bash
+mkdir /usr/local/src/certbot
+cd /usr/local/src/certbot
+wget https://dl.eff.org/certbot-auto
+chmod a+x certbot-auto
+/usr/local/src/certbot/certbot-auto --nginx
+```
+**The script will ask various questions** and perform the appropriate changes needed in the configuration of the website, adjustments after it is complete may be needed if other sites were configured, besides the one in `asterion.conf`.  The script can be rerun if there are typos, etc. after corrections have been applied.
+##### Set up Certbot Renewal
+If Certbot is being used, then the certificates will need to be renewed from time to time.  The following will wake up periodically and will perform renewal of the assets when needed.
+``` bash
+cat /usr/local/src/certbot/renew.sh <<EOF
+#!/bin/bash
+export PATH=$PATH:/usr/sbin
+/usr/local/src/certbot/certbot-auto renew
+EOF
+```
+Test the renewal process
+
+    /usr/local/src/certbot/certbot-auto renew --dry-run
+
+Install as a cronjob action
+``` bash
+echo -n '0 0,12 * * * root python -c ' > /etc/cron.d/certbot
+echo -n "'import random; import time; time.sleep(random.random() * 3600)'" \
+  >> /etc/cron.d/certbot
+echo ' && /usr/local/src/certbot/renew.sh' >> /etc/cron.d/certbot
+```
+___
 
 ## Software Download and install
----
 ### Identify the AsterionDB Software Bundles
 *The softwate will either be provided as a list of Objects and will be able to be accessed from an Object Vault Instance provided by AsterionDB.*
-#### Connect in as `asterion` user
-    ssh -i keyfile opc@${ipAddress}
+    ssh -i keyfile asterion@${ipAddress}
 
 #### Set up `asterion` user defaults
-*For `TWO_TASK`, use the **DBaliasName** used earlier.*
+*For `TWO_TASK`, specify the **DBaliasName** retried from tnsnames.ora earlier.*
 `TNS_ADMIN` can be set if the Wallet Location is different from the Default. If the location is differernt, then either `sqlnet.ora` needs to be adjusted from what is provided from what is initially included in the Oracle Wallet -or- ORACLE_HOME needs to be set to a directory structure `network/admin` which contains the expanded Wallet contents.
 ``` bash
 cat >> .bash_profile <<EOF
