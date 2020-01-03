@@ -15,10 +15,10 @@
     2. php (objValueAPI owner)
 1. Fuse plugin setup (used by dbObscura)
 1. php-fpm configuration (used by objVault API)
-1. Build base video Databse plugin hooks (used by dbPlugin)
+1. Download the Open Source and AsterionDB software
+2. Build the Open Source Components
 1. Disable SE Linux / Bounce the Compute Node
 1. Perform nginx configuration and activate HTTPS (SSL)
-1. Download / expand the AsterionDB software
 1. Perform the Database product creation
     1. Choose schema names and passwords
     2. Configure and Run the installation script
@@ -55,15 +55,15 @@ yum install -y \
     oracle-instantclient19.3-tools \
     oracle-instantclient19.3-sqlplus
 ```
-### Enable and validate connectivity to the Database
-#### Move the Cloud Wallet info into the default location
-*Note: If the wallet is placed in a different location, `TNS_ADMIN` environment variable needs to be setup to point to the alternate location, these instructions assume the Oracle Instant Client Default location*
+### Enable and validate connectivity to the Database **(`default` location)**
+#### Move the Cloud Wallet info into the **(`default` location)**
+*Note: If the wallet is placed in a different location, `TNS_ADMIN` environment variable needs to be setup to point to the alternate location, these instructions assume the Oracle Instant Client Default location - see below minor changes needed.*
 ``` bash
 mkdir -p /usr/lib/oracle/19.3/client64/lib/network/admin
 unzip -d /usr/lib/oracle/19.3/client64/lib/network/admin \
       /home/opc/Wallet_DBname.zip
 ```
-#### Find out the first DB alias provided from the Wallet
+#### Find out the first DB alias provided from the Wallet **(`default` location)**
 ``` bash
 head -1 /usr/lib/oracle/19.3/client64/lib/network/admin/tnsnames.ora
 ```
@@ -71,9 +71,10 @@ head -1 /usr/lib/oracle/19.3/client64/lib/network/admin/tnsnames.ora
  **DBaliasName**`= (description= ...)`
 ___
 Set `DBalias="`**DBaliasName**`"`
-#### Validate connection with SQL\*Plus
-*Note: `ORACLE_HOME` is being set due to the default assumptions currently made by Oracle Cloud Wallet generated.*
-You will need to be able to connect in as the Oracle Automous (or Admin account who can perform SYSDBA on the target Database instance).
+#### Validate connection with SQL\*Plus **(`default` location)**
+*Note: `ORACLE_HOME` is being set due to the default assumptions currently made by **unchanged** Oracle Cloud Wallet generated.*
+You will need to be able to connect in as the Admin of the Oracle Autonomous Database (this is provided as a managed PDB Container).
+*For non-autonomous Database instances there will need to be an "Admin" account which has been granted SYSDBA activities during some aspects of the Database Install, which should NOT be the SYS account itself, gain assistance from AsterionDB support for the minor additions when the target is not a PDB container, as in Autonoumous).*
 ``` bash
 export ORACLE_HOME='/usr/lib/oracle/19.3/client64/lib'
 sqlplus ADMIN/@${DBalias}
@@ -84,6 +85,39 @@ Password:
 ...
 Connected.
 SQL>
+___
+### Enable and validate connectivity to the Database **(`alternate` location)**
+Choose a location for the Oracle Cloud Wallet to be expanded which is not the default under the Oracle Instant Client. You will set this location to the environment variable `TNS_ADMIN` and proceed with the minor alterations needed -- *the environment variable `ORACLE_HOME` would no longer be required and `TNS_ADMIN` to this location can be set in its place in any later references.*
+
+`export TNS_ADMIN=`**Location_to_hold_Cloud_Wallet**
+#### Move the Cloud Wallet info to the **(`alternate` location)**
+``` bash
+mkdir -p ${TNS_ADMIN}
+unzip -d ${TNS_ADMIN} \
+      /home/opc/Wallet_DBname.zip
+```
+
+#### Find out the first DB alias provided from the Wallet **(`alternate` location)**
+``` bash
+head -1 ${TNS_ADMIN}/tnsnames.ora
+```
+*Results in*
+ **DBaliasName**`= (description= ...)`
+___
+Set `DBalias="`**DBaliasName**`"`
+#### Validate connection with SQL\*Plus **(`alternate` location)**
+You will need to be able to connect in as the Admin of the Oracle Autonomous Database (this is provided as a managed PDB Container).
+*For non-autonomous Database instances there will need to be an "Admin" account which has been granted SYSDBA activities during some aspects of the Database Install, which should NOT be the SYS account itself, gain assistance from AsterionDB support for the minor additions when the target is not a PDB container, as in Autonoumous).*
+``` bash
+sqlplus ADMIN/@${DBalias}
+```
+You will be invited to provide the ADMIN password and you're looking for **connected**
+...
+Password: 
+...
+Connected.
+SQL>
+___
 
 ### Startup Validate Basic nginx Webserver
 ``` bash
@@ -98,7 +132,7 @@ firewall-cmd --reload
 Connect to port 80 of the `${ipAddress}` from your browser, ensure `nginx` test page.  The defaul nginx server reponds to any Port 80 request, so it is not yet required to have DNS published, however, if it is you can use the new fully qualified domain for this connection test. *You may need to make adjustments to the Compute Node's exposed Network to allow port 80 and 443 through to the instance.*
 
 
-### Set up users and services
+### Set up users, group access and initial system services
 ``` bash
 useradd asterion
 mkdir /home/asterion/.ssh
@@ -139,7 +173,7 @@ chown asterion:asterion /mnt/dbObscuraOra
     post_max_size = 1G
     upload_tmp_dir = /var/php
 
-*edit* `/etc/php-fpm.d/www.conf`, set the following properties
+*edit* `/etc/php-fpm.d/www.conf`, set the following properties, `TNS_ADMIN` can be set in place of `ORACLE_HOME` if the Wallet resides in the **(`alternate` location)**. 
 
     user = php
     group = php
@@ -151,6 +185,7 @@ chown asterion:asterion /mnt/dbObscuraOra
     env[LD_LIBRARY_PATH] = /usr/lib/oracle/18.3/client64/lib
     env[ORACLE_HOME] = /usr/lib/oracle/18.3/client64/lib
 #### Set up php-fpm as a Service
+*Note: the TNS_ADMIN value here would need to reflect the **(`alternate` location)** if that was implemeneted earlier.
 ``` bash
 mkdir /etc/systemd/system/php-fpm.service.d/
 cat > /etc/systemd/system/php-fpm.service.d/php-fpm-oracle.conf <<"EOF"
@@ -170,30 +205,44 @@ systemctl enable php-fpm
 systemctl start php-fpm
 systemctl status php-fpm
 ```
-### Build base video Database plugin hooks
+### Download the Open Source and AsterionDB Software (as `asterion` user)
 
-*As asterion user, download libvpx-v1.7.0.tar.gz, nasm-2.13.02.tar.gz, last_x264.tar.bz, ffmpeg-4.1.3.tar.bz2 from AsterionDB distribution using `wget --content-disposition ...`*
+*Become the asterion user, download libvpx-v1.7.0.tar.gz, nasm-2.13.02.tar.gz, last_x264.tar.bz, ffmpeg-4.1.3.tar.bz2 and the AsterionDB distribution using `wget  ...`*
 ``` bash
 su - asterion
 ```
-#### *create* `plugin.list`, add the Object IDs provided by AsterionDB
+#### *create* `plugin.list` and `dist.list`, add the Object IDs provided by AsterionDB
 ``` bash
-cat >plugin.list <<EOF
+# Open Source Components used by the Plugin Server
+cat >plugin.list
 ...
-EOF
+^D
+# AsterionDB Object List
+cat >dist.list
+...
+^D
 ```
-#### *create* `dist.url`, place the URL provided by AsterionDB and create holding directory
+
+#### *create* `dist.url`, place the URL provided by AsterionDB and create holding directories for the Open Source and asterionDB product distribution
 ``` bash
 echo -n 'https://dist-sys.asteriondb.com/download/download_object?' > dist.url
-mkdir plugin_download
+mkdir -p ~asterion/plugin_downloads
 ```
 #### Download the `plugin` archive
 ``` bash
-for obj in `cat plugin.list`;do
-  wget --content-disposition -P plugin_downloads `cat dist.url`"${obj}"
+cd ~asterion
+for obj in `cat./plugin.list`;do
+  wget --content-disposition -P ./plugin_downloads `cat ./dist.url`"${obj}"
 done
 ```
-#### Exit back to root
+#### Download and expand the AsterionDB software products
+``` bash
+cd ~asterion
+for obj in `cat ./dist.list`;do
+  wget -O - `cat ./dist.url`"${obj}" | tar xvzf -
+done
+```
+#### Exit back to being `root`
     exit
 
 #### Unpack the plugin open source components
@@ -210,9 +259,9 @@ export PATH=$PATH:/usr/local/bin
 export LD_LIBRARY_PATH=/usr/local/lib
 ```
 #### Compile and Install
-While remaining in `/usr/local/src`
-For each of the products
-1. Change into product directory
+Work will be performed in `/usr/local/src/...`
+For each of the products, this is the outline:
+1. Change into each product directory
 2. ./configure [with product options]
 3. make
 4. make install
@@ -246,7 +295,7 @@ Then, reboot --
 
 ### Perform nginx configuration and activate HTTPS (SSL)
 Sign back in as the root user via asterion account, which was set up for sudo access earlier.
-#### Connect in as `asterion` user
+#### Connect in as `asterion` user, then become `root`
 
     ssh -i keyfile asterion@${ipAddress}
     sudo -s
@@ -301,14 +350,14 @@ EOF
 ```
 Next, we provide the Asterion site configuration.
 *Note: If other sites are to be configured, these should NOT be expressed in the base `nginx.conf` which we have replaced above. You can harvest these other "server" sections and place them in appropropriate site specific files located in a similar pattern to the one provided in the following as `asterion.conf`, notice that these reside in `/etc/nginx/conf.d` to allow the sites to be updated independently of one another.*
-You will provide an Environment variable `EXTERNAL_NAME` with the value of the fully qualified domanin name(s) registered as you DNS entry in order to allow the subsitiutions to work properly.  Otherwise, you may need to do some manual editing of `/etc/nginx/conf.d/asterion.conf` to address corner cases.
+You will provide an Environment variable `EXTERNAL_NAMES` with the value of the fully qualified domanin name(s) registered as you DNS entry in order to allow the subsitiutions to work properly.  Otherwise, you may need to do some manual editing of `/etc/nginx/conf.d/asterion.conf` to address corner cases.
 
-`export EXTERNAL_NAME=`**fully-qualified-dns-external-name**
+`export EXTERNAL_NAMES=`**fully-qualified-dns-external-name(s)**
 ``` bash
-sed "s@%EXTERNAL_NAME%@$EXTERNAL_NAME@g" <<"EOF" > /etc/nginx/conf.d/asterion.conf
+sed "s@%EXTERNAL_NAMES%@$EXTERNAL_NAMES@g" <<"EOF" > /etc/nginx/conf.d/asterion.conf
 server
 {
-  server_name %EXTERNAL_NAME%;
+  server_name %EXTERNAL_NAMES%;
   listen 80;
 
     location /objectVault/installationGuide
@@ -357,7 +406,6 @@ server
 }
 EOF
 ```
-**None of the product specific content has been put into place yet, so the webserver will not work at this point.**
 #### Install certbot (secure traffic via SSL)
 Shown here are the instructions to support HTTPS access (SSL) using the Free Certificates and Automatic configuration via CertBot - https://certbot.eff.org
 If another strategy is to be employed within this Compute Node, then that should be applied now for the `asterion.conf` and loading (in the appropriate location for that strategy) of the required certificate and key assets needed.
@@ -393,15 +441,17 @@ echo -n "'import random; import time; time.sleep(random.random() * 3600)'" \
 echo ' && /usr/local/src/certbot/renew.sh' >> /etc/cron.d/certbot
 ```
 ___
+**At this point the URL for the Website will not come up without error until later steps address configuration specific to this installation.**
+___
 
-## Software Download and install
-### Identify the AsterionDB Software Bundles
-*The softwate will either be provided as a list of Objects and will be able to be accessed from an Object Vault Instance provided by AsterionDB.*
-    ssh -i keyfile asterion@${ipAddress}
+### Set up `asterion` user defaults
+Become the `asterion` user by exiting the `root` sudo issued earlier
 
-#### Set up `asterion` user defaults
-*For `TWO_TASK`, specify the **DBaliasName** retried from tnsnames.ora earlier.*
-`TNS_ADMIN` can be set if the Wallet Location is different from the Default. If the location is differernt, then either `sqlnet.ora` needs to be adjusted from what is provided from what is initially included in the Oracle Wallet -or- ORACLE_HOME needs to be set to a directory structure `network/admin` which contains the expanded Wallet contents.
+    exit
+
+*For `TWO_TASK` below, specify the **DBaliasName** retrieved from `tnsnames.ora` earlier.*
+
+An `export` for `TNS_ADMIN` can be added, if the Wallet Location is different from the Default -- when the location is different, **and the adjustments to `sqlnet.ora` have been made in the earlier (`alternative` location) steps** from what was provided initially in the Oracle Wallet.
 ``` bash
 cat >> .bash_profile <<EOF
 export ORACLE_HOME=/usr/lib/oracle/18.3/client64/lib
@@ -418,20 +468,81 @@ alias ufi='rlwrap sqlplus "$@"'
 EOF
 ```
 
-**The Following to be completed**
-
-### Software Downloads from distribution source
-Include the download for loops
-Symbolic link for ObjVault WebApp
-
 **Installation of AsterionDB Database Components:**
 1. Database setup script
 
-**Configuration and start of AsteironDB Compute Services:**
+**Configuration and start of AsteironDB Services:**
 ### Product Configuration
-1. JavaScript for Web App
+1. Symbolic Link for ObjVault WebApp
+2. JavaScript for Web App
 2. userid/password and connection for ObjVault API
 3. userid/password and connection for dbStreamer, dbPlugin, dbObscura
 4. service setup script
-#### Webserver and content are now in place
+
+#### Create a symbolic link to the most recent version of the ObjVault WebApp
+This allows for quick identification of which version of the React WebApp is being used and controlling the distribution pace to the clients.  The symbolic link, not the specific version was included in the nginx `asterion.conf` used for the site configuration.
+``` bash
+cd ~asterion/asterion/oracle/objVault/javascript
+ls -d objVault-webApp-*
+```
+Select the desired (or most recent) version (in the form `objVault-webApp-x.x.x` where x.x.x is the verison number) and use that in the following symbolic link creation.  Replace any earlier Symbolic links, if there was a need for a replacement.
+``` bash
+rm -f objVault-webApp
+ls -l objVault-webApp-x.x.x objVault-webApp
+```
+#### Provide configuration to allow the WebApp to locate the API layer
+In this case, there must be only one external name specified even if there were multiple aliases defined in DNS.  This is slightly different than during the nginx configuration earlier.
+`export EXTERNAL_NAME=`**fully-qualified-dns-external-name**
+``` bash
+cd ~asterion/asterion/oracle/objVault/javascript/objVault-webApp/build/assets
+sed "s@your\.objectVault\.server@${EXTERNAL_NAME}@g" asteriondbConfig.example >asteriondbConfig.js
+```
+### Webserver and content are now in place
 Unix connectivity to port 80 and ensure that it redirects to 443, showing login page. An error may show due to the Database needing to be set up properly.
+
+### Prepare for the Database installation
+1. Identify the connection name to be used, from **DBaliasName** above.
+2. Create a list of Asterion Schema Users and Passwords
+    1. `asterion_objvault` Object Vault Core Owner
+    2. `asterion_dbobscura` Database Object Obscura Service Owner
+    3. `asterion_dbstreamer` Database Object Streamer Service Owner
+    4. `asterion_dbplugins` Database Plugin logic Service Owner
+3. Determine if the Database being connected to is a PDB Container (including autonomous instance) or traditional / CDB (master container).
+
+#### Install Database Components **(Cleanup needed)**
+Set `DBalias="`**DBaliasName**`"`
+
+``` bash
+cd ~/asterion/oracle/admin
+sed 's@%***%@asterion_objvault@g;'\
+'s@%***%@asterion_dbobscura@g;'\
+'s@%***%@asterion_dbstreamer@g;'\
+'s@%***%@asterion_dbplugins@g;' \
+"s@%***%@${DBalias}@g"
+    ./install_settings.input > ./install_settings.sh
+```
+*edit* `install_settings.sh`
+Place the passwords selected for each of the accounts.  *It is advised that each of these have unique and strong passwords to reduce cross intrusion risks between services.*
+Set the `autonomous` flag as `true` for autonomous / PDB or `false` for non-autonomous / non-PDB type Database instance.  *In the case for non-PDB, a SYSDBA blessed admin user (such as SYS) will need to be able to be connected to with it's password for an initial GRANT to the actual Admin account (such as SYSTEM) for the remainder of the installation.*
+
+#### Install Database Components **(May be optional)**
+*Note: If this is a fresh installation of just the compute node connecting to an  existing AsterionDB Database instance or one that has been imported, the Database Installation itself may be able to be skipped.*
+
+``` bash
+cd ~/asterion/oracle/admin
+./install.sh
+```
+### Install Asterion Services executables
+``` bash
+cd ~/asterion/oracle/admin
+./fullDist.sh
+```
+### Perform Service configuration
+
+``` bash
+cd ~/asterion/oracle/config
+# TBD, see if this can be leveraged off of the install_settings.sh used earlier
+# With the advice to remove install_settings.sh after installtion is
+# Completed and verified
+```
+
