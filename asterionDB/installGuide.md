@@ -525,20 +525,37 @@ Unix connectivity to port 80 and ensure that it redirects to 443, showing login 
 
 #### Install Database Components **(Cleanup needed)**
 
-##### Create initial configuration helper file from template.
+##### Create initial configuration helper file from template, based on default values.
 ``` bash
 cd ~;source .bash_profile
 cd ~/asterion/oracle/admin
-sed 's@%***%@asterion_objvault@g;'\
-'s@%***%@asterion_dbobscura@g;'\
-'s@%***%@asterion_dbstreamer@g;'\
-'s@%***%@asterion_dbplugins@g;' \
-"s@%***%@${TWO_TASK}@g"
+sed 's@%VAULT_USER%@asterion_objvault@g;'\
+'s@%DBOBSCURA_USER%@asterion_dbobscura@g;'\
+'s@%DBSTREAMER_USER%@asterion_dbstreamer@g;'\
+'s@%DBPLUGIN_USER%@asterion_dbplugins@g;'\
+'s@%DEFAULT_TS%@DATA@g;s@%LOB_TS%@DATA@g;'\
+'s@%SYSDBA_USER%@SYS@g;s@%DBA_USER%@ADMIN@g;'\
+'s@%AUTONOMOUS_DB%@true@g;'\
+"s@%VAULT_HOST%@${EXTERNAL_NAME}@g;"\
+'s@%VAULT_ADMIN_USER%@Admin@g;'
     ./install_settings.input > ./install_settings.sh
 ```
 *edit* `install_settings.sh`
-Place the passwords selected for each of the accounts.  *It is advised that each of these have unique and strong passwords to reduce cross intrusion risks between services.*
-Set the `autonomous` flag as `true` for autonomous / PDB or `false` for non-autonomous / non-PDB type Database instance.  *In the case for non-PDB, a SYSDBA blessed admin user (such as SYS) will need to be able to be connected to with it's password for an initial GRANT to the actual Admin account (such as SYSTEM) for the remainder of the installation.*
+Place the passwords selected for each of the schema accounts within the file.  *It is advised that each of these have unique and strong passwords to reduce cross intrusion risks between services.*
+Make appropriate changes to each of the following substitutions.
+*Note: retain double-quotes surround values which might contain special charactes, such as spaces.*
+1. `%VAULT_PASSWORD%`
+2. `%DBOBSCURA_PASSWORD%`
+3. `%DBSTREAMER_PASSWORD%`
+4. `%DBPLUGIN_PASSWORD%`
+5. `%SYSDBA_PASSWORD%` - *only referenced if* `AUTONOMOUS_DB` is set to `false`
+6. `%DBA_PASSWORD%` - Password for Autonomous PDB 'ADMIN'
+7. `%VAULT_ADMIN_PASSWORD%` - sign-on for the Asterion Framework 'Admin'
+8. `%VAULT_ADMIN_FNAME%`, `%VAULT_ADMIN_LNAME%` - Framework 'Admin' name
+7. `%VAULT_EMAIL%`, `%VAULT_PROFILE%` - Framework 'Admin' email / profile?
+
+Defaulted fields can be adjusted during this *edit* session.
+The `autonomous` flag is set above to `true` for autonomous / PDB and would need to be set to `false` for a non-autonomous / non-PDB type Database instance.  *In the case for non-PDB, a SYSDBA blessed admin user (such as SYS) will need to be able to be connected to along with it's password for an initial GRANT to the actual DBA account (such as SYSTEM) used for the remainder of the installation.  In some installations, the 'SYS' account will need to be unlocked to proceed with the installation.*
 
 #### Install Database Components **(May be optional)**
 *Note: If this is a fresh installation of just the compute node connecting to an  existing AsterionDB Database instance or one that has been imported, the Database Installation itself may be able to be skipped.*
