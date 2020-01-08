@@ -482,11 +482,20 @@ alias ufi='rlwrap sqlplus "$@"'
 EOF
 ```
 
+### Setup and Configure SMTP plugin Service
+Point to the SMTP plugin client into the asterion/oracle/lib directory
+cd ~asterion/asterion/oracle/lib
+ln -s ../dbPluginServer/plugins/smtpClient/redhat/el7/libsmtpClient.so ./libsmtpClient.so
+
+#### Configure SMTP user account
+
+### Install and Product Configuration
+#### Overview -- **need to sync up sequence of overview vs. actual steps**
+
 **Installation of AsterionDB Database Components:**
 1. Database setup script
 
 **Configuration and start of AsteironDB Services:**
-### Product Configuration
 1. Symbolic Link for ObjVault WebApp
 2. JavaScript for Web App
 2. userid/password and connection for ObjVault API
