@@ -19,13 +19,17 @@ Builds out (with the Database Option) an image containing the OCI Command Line I
 For example:
 
 ```bash
-docker build -t oracle_oci .
+$ docker build -t oracle_oci .
 ...
+```
+If an error happens during the install, the `install.log` will be printed, otherwise it will be available
+for review in `root`.
+```bash
+$ docker run -it --rm oracle_oci:latest
+bash-4.2# oci -v  
+2.9.4
 
-docker run -it --rm oracle_oci:latest
-
-# oci --help
-...
+bash-4.2# oci --help
 ```
 
 ## Tutorial
