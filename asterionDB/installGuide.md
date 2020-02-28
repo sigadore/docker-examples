@@ -484,10 +484,14 @@ EOF
 
 ### Setup and Configure SMTP plugin Service
 Point to the SMTP plugin client into the asterion/oracle/lib directory
+``` bash
 cd ~asterion/asterion/oracle/lib
 ln -s ../dbPluginServer/plugins/smtpClient/redhat/el7/libsmtpClient.so ./libsmtpClient.so
+```
 
 #### Configure SMTP user account
+
+**TBD**
 
 ### Install and Product Configuration
 #### Overview -- **need to sync up sequence of overview vs. actual steps**
