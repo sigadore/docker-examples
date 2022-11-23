@@ -15,7 +15,7 @@ to interact with one or more of the WSL instances, allowing for
 cross platform debugging.
 
 Normally, one would follow the instructions (Microsoft Package Feed)
-[https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#2204-microsoft-package-feed](Dotnet on Ubuntu)
+[Dotnet on Ubuntu](https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu#2204-microsoft-package-feed)
 ```bash
 # As root ( i.e. sudo -s )
 apt update &&\
