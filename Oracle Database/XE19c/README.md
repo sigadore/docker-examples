@@ -1,13 +1,25 @@
-# docker-examples/Oracle Database/XE13c
+# docker-examples/Oracle Database/XE19c
 
 ## Source Materials
 
 Oracle Database XE 19c originally based on [11.2 example](https://github.com/freneticdisc/oracle-blog-examples/tree/master/Docker%20-%20Oracle%20Database) @freneticdisc/oracle-blog-examples and [23c Dev Edition example](https://blogs.oracle.com/coretec/post/oracle-database-23c-development-edition-on-docker)
 
-*An alternative is to follow the official instructions of the README.md at [GitHub](https://github.com/oracle/docker-images/tree/main/OracleDatabase/SingleInstance), which provides out of the box support into other editions.*
+## Other Options
+
+An alternative is to follow the official instructions of the README.md at [GitHub](https://github.com/oracle/docker-images/tree/main/OracleDatabase/SingleInstance), which provides out of the box support into other editions.
+
+Follow the Path [Oracle Docker Registry](https://container-registry.oracle.com) > Oracle Database > Free
+this includes Documentation for how to use the Master Image of the Latest Release.
+
+## Rolling our own
 
 The example Dockerfile expects to have the downloaded rpm [@ Oracle.Com > Technologies](https://www.oracle.com/database/technologies/oracle-database-software-downloads.html#db_free) for the XE 19c Database in the same directory.
-*I am focused on the LTM support version here since ARM has been announced for it.  So, my Docker scripting is using .zip install rather than .rpm*
+
+*At the time of this edit, I am looking for an ARM64 of XE19c (on my Mac) which is proving to be elusive.*
+
+### Installation Documentation
+
+[XE19c ARM](https://docs.oracle.com/en/database/oracle/oracle-database/19/ladbi/index.html)
 
 ### Instructions
 1. [Install Docker](https://www.docker.com/get-started) from here for your platform. 
